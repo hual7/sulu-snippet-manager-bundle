@@ -56,6 +56,10 @@ sulu_snippet_manager:
                     order: 0
                     icon: "su-settings"
                     list_view_key: "my-custom-view"
+                    tabs:
+                        additional:
+                            form_key: "snippet_additional_data"
+                            tab_title: "app.additional_data"
                 account:
                     navigation_title: "Account Settings"
                     type: "account"
@@ -78,11 +82,45 @@ sulu_snippet_manager:
 | icon              |    no    | Sulu icon name (e.g. su-settings, see [icon overview](https://jsdocs.sulu.io/2.5/#!/Icon))                                                      |
 | children          |    no    | Nested navigation items — parent items with children act as groups without detail views, parents without children behave like normal list views |
 | snippet_list_view |    no    | The custom list view xml, where the view is configured                                                                                          |  
+| tabs              |    no    | Additional form tabs shown on the snippet's edit view (see below)                                                                                |
+
+### Additional form tabs
+Third-party bundles (and your own project) can attach extra form tabs to the *core* Sulu snippet
+edit view. Because this bundle builds its own view tree per snippet type, those tabs are not picked
+up automatically. Instead, declare them per snippet type under `tabs:` and they are rendered on the
+type's edit view — and, when secured, exposed in the permission management:
+
+```yaml
+tabs:
+    additional:                                 # tab key — part of the view name and security context
+        form_key: "snippet_additional_data"     # a form provided by another bundle
+        tab_title: "app.additional_data"        # translation key of the tab label
+        tab_order: 45                            # optional, default 45
+        path: "/additional"                      # optional, default "/<key>"
+        secured: true                            # optional, default true — registers an own permission
+        title_visible: true                      # optional, default true
+```
+
+| tab item      | required | description                                                                                                             |
+|:--------------|:--------:|:------------------------------------------------------------------------------------------------------------------------|
+| form_key      |   yes    | Form key of the tab's form (must be provided by some bundle; this bundle only wires the view and permission)             |
+| tab_title     |   yes    | Translation key of the tab label                                                                                        |
+| tab_order     |    no    | Sort order of the tab (default `45`)                                                                                    |
+| path          |    no    | Route path segment of the tab (default `/<key>`)                                                                        |
+| secured       |    no    | When `true` (default), registers an EDIT security context `snippet_manager.<type>_<key>` gating the tab per role         |
+| title_visible |    no    | Whether the form title is shown (default `true`)                                                                       |
+
+> ℹ️ Only generic form tabs (a single `form_key`) are supported. Specialized views (e.g. an
+> automation task list) are not covered by this schema.
 
 ### Permissions
 Each snippet automatically receives its own permission key. These permissions are independent from the global snippet permissions in Sulu.
 
 You can assign user roles to control access (view, add, edit, delete) to each snippet separately.
+
+Secured `tabs` add an additional EDIT permission (`snippet_manager.<type>_<key>`) under the
+*Snippet Manager* section. After adding a secured tab, re-grant the permission to the relevant roles —
+new contexts default to no access.
 
 ⚠️ **Important**:
 Users without the required permission won’t see the corresponding navigation item in the Sulu Admin UI.

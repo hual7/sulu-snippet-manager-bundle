@@ -25,6 +25,7 @@ class SnippetManagerExtensionTest extends KernelTestCase
                         'order' => 42,
                         'icon' => 'su-settings',
                         'list_view_key' => 'snippets',
+                        'tabs' => [],
                     ],
                     'account_settings' => [
                         'navigation_title' => 'Account Settings',
@@ -32,10 +33,12 @@ class SnippetManagerExtensionTest extends KernelTestCase
                         'order' => 43,
                         'icon' => 'su-account',
                         'list_view_key' => 'snippets',
+                        'tabs' => [],
                     ],
                 ],
                 'type' => null,
                 'list_view_key' => 'snippets',
+                'tabs' => [],
             ],
             'services' => [
                 'navigation_title' => 'Services',
@@ -44,6 +47,7 @@ class SnippetManagerExtensionTest extends KernelTestCase
                 'icon' => 'su-services',
                 'list_view_key' => 'snippets',
                 'children' => [],
+                'tabs' => [],
             ],
         ], $settings);
     }

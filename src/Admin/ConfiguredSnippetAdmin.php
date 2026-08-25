@@ -28,6 +28,7 @@ class ConfiguredSnippetAdmin extends Admin
     /**
      * @param array<string, array{instanceOf: class-string}> $settingsForms
      * @param array<string, array{instanceOf: class-string}> $excerptForms
+     * @param array<string, array{form_key: string, tab_title: string, tab_order?: int, path?: string|null, secured?: bool, title_visible?: bool}> $tabs
      */
     public function __construct(
         private readonly ViewBuilderFactoryInterface $viewBuilderFactory,
@@ -45,6 +46,7 @@ class ConfiguredSnippetAdmin extends Admin
         private readonly int $position = 40,
         private readonly string $icon = 'su-snippet',
         private readonly ?string $parentNavigation = null,
+        private readonly array $tabs = [],
     ) {
     }
 
@@ -80,6 +82,7 @@ class ConfiguredSnippetAdmin extends Admin
         $this->buildFormViewTemplates($viewCollection);
         $this->buildExcerptView($viewCollection);
         $this->buildSettingsView($viewCollection);
+        $this->buildConfiguredTabViews($viewCollection);
         $this->buildInsightsView($viewCollection);
     }
 
@@ -246,6 +249,41 @@ class ConfiguredSnippetAdmin extends Admin
         );
     }
 
+    private function buildConfiguredTabViews(ViewCollection $viewCollection): void
+    {
+        if ($this->securityChecker->hasPermission($this->buildSecurityContext(), PermissionTypes::EDIT) === false) {
+            return;
+        }
+
+        foreach ($this->tabs as $key => $tab) {
+            if (($tab['secured'] ?? true)
+                && $this->securityChecker->hasPermission($this->buildSecurityContext($key), PermissionTypes::EDIT) === false
+            ) {
+                continue;
+            }
+
+            $viewCollection->add(
+                $this->viewBuilderFactory
+                    ->createFormViewBuilder(
+                        $this->buildViewName(ViewTypes::EDIT) . '.' . $key,
+                        $tab['path'] ?? ('/' . $key),
+                    )
+                    ->setResourceKey(Snippet::RESOURCE_KEY)
+                    ->setFormKey($tab['form_key'])
+                    ->setTabTitle($tab['tab_title'])
+                    ->setTitleVisible($tab['title_visible'] ?? true)
+                    ->setTabOrder($tab['tab_order'] ?? 45)
+                    ->addToolbarActions(
+                        $this->formToolbarBuilder->build(
+                            $this->buildSecurityContext(),
+                            $this->buildViewName(ViewTypes::EDIT),
+                        ),
+                    )
+                    ->setParent($this->buildViewName(ViewTypes::EDIT)),
+            );
+        }
+    }
+
     private function buildInsightsView(ViewCollection $viewCollection): void
     {
         if (
@@ -314,28 +352,38 @@ class ConfiguredSnippetAdmin extends Admin
 
     public function getSecurityContexts(): array
     {
+        $snippetManagerContexts = [
+            $this->buildSecurityContext(PermissionTypes::CONTEXT_SNIPPETS) => [
+                PermissionTypes::VIEW,
+                PermissionTypes::ADD,
+                PermissionTypes::EDIT,
+                PermissionTypes::DELETE,
+            ],
+            $this->buildSecurityContext(PermissionTypes::CONTEXT_EXCERPT) => [
+                PermissionTypes::EDIT,
+            ],
+            $this->buildSecurityContext(PermissionTypes::CONTEXT_SETTINGS) => [
+                PermissionTypes::EDIT,
+            ],
+            $this->buildSecurityContext(PermissionTypes::CONTEXT_INSIGHTS) => [
+                PermissionTypes::EDIT,
+            ],
+            $this->buildSecurityContext(PermissionTypes::CONTEXT_DEFAULT_SNIPPETS) => [
+                PermissionTypes::EDIT,
+            ],
+        ];
+
+        foreach ($this->tabs as $key => $tab) {
+            if ($tab['secured'] ?? true) {
+                $snippetManagerContexts[$this->buildSecurityContext($key)] = [
+                    PermissionTypes::EDIT,
+                ];
+            }
+        }
+
         return [
             'Sulu' => [
-                'Snippet Manager' => [
-                    $this->buildSecurityContext(PermissionTypes::CONTEXT_SNIPPETS) => [
-                        PermissionTypes::VIEW,
-                        PermissionTypes::ADD,
-                        PermissionTypes::EDIT,
-                        PermissionTypes::DELETE,
-                    ],
-                    $this->buildSecurityContext(PermissionTypes::CONTEXT_EXCERPT) => [
-                        PermissionTypes::EDIT,
-                    ],
-                    $this->buildSecurityContext(PermissionTypes::CONTEXT_SETTINGS) => [
-                        PermissionTypes::EDIT,
-                    ],
-                    $this->buildSecurityContext(PermissionTypes::CONTEXT_INSIGHTS) => [
-                        PermissionTypes::EDIT,
-                    ],
-                    $this->buildSecurityContext(PermissionTypes::CONTEXT_DEFAULT_SNIPPETS) => [
-                        PermissionTypes::EDIT,
-                    ],
-                ],
+                'Snippet Manager' => $snippetManagerContexts,
             ],
         ];
     }

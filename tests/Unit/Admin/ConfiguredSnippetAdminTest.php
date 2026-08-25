@@ -280,6 +280,139 @@ class ConfiguredSnippetAdminTest extends TestCase
         self::assertCount(0, $views);
     }
 
+    public function testConfigureViewCollectionWithSecuredTab(): void
+    {
+        $admin = $this->buildAdmin('testsnippet', 'My Title', 20, 'su-snippet', 'parentNavigation', 'snippets', [
+            'additional' => [
+                'form_key' => 'snippet_additional_data',
+                'tab_title' => 'app.additional_data',
+                'tab_order' => 45,
+                'path' => null,
+                'secured' => true,
+                'title_visible' => true,
+            ],
+        ]);
+        $viewCollection = new ViewCollection();
+        $admin->configureViews($viewCollection);
+
+        $views = $viewCollection->all();
+
+        self::assertCount(11, $views);
+        self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit.additional', $views);
+
+        $tabView = $views['sulu_snippet_manager_testsnippet.edit.additional']->getView();
+        AssertView::assertFormView([
+            'name' => 'sulu_snippet_manager_testsnippet.edit.additional',
+            'path' => '/additional',
+            'resourceKey' => 'snippets',
+            'toolbarActions' => ['save', 'delete'],
+            'parent' => 'sulu_snippet_manager_testsnippet.edit',
+        ], $tabView);
+        self::assertSame('snippet_additional_data', $tabView->getOption('formKey'));
+        self::assertSame('app.additional_data', $tabView->getOption('tabTitle'));
+        self::assertSame(45, $tabView->getOption('tabOrder'));
+        self::assertTrue($tabView->getOption('titleVisible'));
+    }
+
+    public function testConfigureViewCollectionUsesCustomPath(): void
+    {
+        $admin = $this->buildAdmin('testsnippet', 'My Title', 20, 'su-snippet', 'parentNavigation', 'snippets', [
+            'additional' => [
+                'form_key' => 'snippet_additional_data',
+                'tab_title' => 'app.additional_data',
+                'path' => '/custom-path',
+            ],
+        ]);
+        $viewCollection = new ViewCollection();
+        $admin->configureViews($viewCollection);
+
+        $tabView = $viewCollection->all()['sulu_snippet_manager_testsnippet.edit.additional']->getView();
+        self::assertSame('/custom-path', $tabView->getPath());
+    }
+
+    public function testConfigureViewCollectionHidesSecuredTabWithoutPermission(): void
+    {
+        $this->securityChecker->hasPermission = [
+            'snippet_manager.testsnippet' => [
+                PermissionTypes::VIEW => true,
+                PermissionTypes::EDIT => true,
+                PermissionTypes::ADD => true,
+            ],
+            'snippet_manager.testsnippet_excerpt' => [PermissionTypes::EDIT => true],
+            'snippet_manager.testsnippet_settings' => [PermissionTypes::EDIT => true],
+            'snippet_manager.testsnippet_insights' => [PermissionTypes::EDIT => true],
+            'sulu.references.references' => ['*' => true],
+            'sulu.activities.activities' => ['*' => true],
+            // no permission for "snippet_manager.testsnippet_additional"
+        ];
+        $admin = $this->buildAdmin('testsnippet', 'My Title', 20, 'su-snippet', 'parentNavigation', 'snippets', [
+            'additional' => [
+                'form_key' => 'snippet_additional_data',
+                'tab_title' => 'app.additional_data',
+                'secured' => true,
+            ],
+        ]);
+        $viewCollection = new ViewCollection();
+        $admin->configureViews($viewCollection);
+
+        $views = $viewCollection->all();
+
+        self::assertCount(10, $views);
+        self::assertArrayNotHasKey('sulu_snippet_manager_testsnippet.edit.additional', $views);
+    }
+
+    public function testConfigureViewCollectionShowsUnsecuredTabWithoutTabPermission(): void
+    {
+        $this->securityChecker->hasPermission = [
+            'snippet_manager.testsnippet' => [
+                PermissionTypes::VIEW => true,
+                PermissionTypes::EDIT => true,
+                PermissionTypes::ADD => true,
+            ],
+            'snippet_manager.testsnippet_excerpt' => [PermissionTypes::EDIT => true],
+            'snippet_manager.testsnippet_settings' => [PermissionTypes::EDIT => true],
+            'snippet_manager.testsnippet_insights' => [PermissionTypes::EDIT => true],
+            'sulu.references.references' => ['*' => true],
+            'sulu.activities.activities' => ['*' => true],
+        ];
+        $admin = $this->buildAdmin('testsnippet', 'My Title', 20, 'su-snippet', 'parentNavigation', 'snippets', [
+            'public' => [
+                'form_key' => 'snippet_public_data',
+                'tab_title' => 'app.public_data',
+                'secured' => false,
+            ],
+        ]);
+        $viewCollection = new ViewCollection();
+        $admin->configureViews($viewCollection);
+
+        $views = $viewCollection->all();
+
+        self::assertCount(11, $views);
+        self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit.public', $views);
+    }
+
+    public function testGetSecurityContextWithSecuredTabs(): void
+    {
+        $admin = $this->buildAdmin('testsnippet', 'My Title', 20, 'su-snippet', 'parentNavigation', 'snippets', [
+            'additional' => [
+                'form_key' => 'snippet_additional_data',
+                'tab_title' => 'app.additional_data',
+                'secured' => true,
+            ],
+            'public' => [
+                'form_key' => 'snippet_public_data',
+                'tab_title' => 'app.public_data',
+                'secured' => false,
+            ],
+        ]);
+
+        $contexts = $admin->getSecurityContexts()['Sulu']['Snippet Manager'];
+
+        self::assertArrayHasKey('snippet_manager.testsnippet_additional', $contexts);
+        self::assertSame([PermissionTypes::EDIT], $contexts['snippet_manager.testsnippet_additional']);
+        self::assertArrayNotHasKey('snippet_manager.testsnippet_public', $contexts);
+    }
+
     public function testGetSecurityContext(): void
     {
         $expected = [
@@ -314,6 +447,9 @@ class ConfiguredSnippetAdminTest extends TestCase
         self::assertSame($expected, $context);
     }
 
+    /**
+     * @param array<string, array{form_key: string, tab_title: string, tab_order?: int, path?: string|null, secured?: bool, title_visible?: bool}> $tabs
+     */
     private function buildAdmin(
         string $snippetType,
         string $navigationTitle,
@@ -321,6 +457,7 @@ class ConfiguredSnippetAdminTest extends TestCase
         string $icon = 'su-icon',
         ?string $parentNavigation = null,
         string $listViewKey = 'snippets',
+        array $tabs = [],
     ): ConfiguredSnippetAdmin {
         return new ConfiguredSnippetAdmin(
             $this->viewBuilderFactory,
@@ -344,6 +481,7 @@ class ConfiguredSnippetAdminTest extends TestCase
             $position,
             $icon,
             $parentNavigation,
+            $tabs,
         );
     }
 }

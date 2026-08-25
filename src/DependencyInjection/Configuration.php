@@ -29,6 +29,7 @@ class Configuration implements ConfigurationInterface
                             ->integerNode('order')->defaultValue(0)->end()
                             ->scalarNode('icon')->defaultValue('su-snippet')->end()
                             ->append($this->addChildrenNode())
+                            ->append($this->addTabsNode())
                         ->end()
                         ->validate()
                             ->ifTrue(function ($config) {
@@ -57,6 +58,33 @@ class Configuration implements ConfigurationInterface
                     ->scalarNode('list_view_key')->defaultValue('snippets')->end()
                     ->integerNode('order')->defaultValue(0)->end()
                     ->scalarNode('icon')->defaultValue('su-snippet')->end()
+                    ->append($this->addTabsNode())
+                ->end()
+            ->end();
+
+        return $node;
+    }
+
+    /**
+     * Additional form tabs shown on a snippet-type's edit view. Each entry renders a
+     * FormView with the given form key and, when "secured" is true (default), registers
+     * an EDIT security context ("snippet_manager.<type>_<key>") so the tab can be
+     * enabled per role in the permission management.
+     */
+    private function addTabsNode(): ArrayNodeDefinition
+    {
+        $node = new ArrayNodeDefinition('tabs');
+
+        $node
+            ->useAttributeAsKey('name')
+            ->arrayPrototype()
+                ->children()
+                    ->scalarNode('form_key')->isRequired()->end()
+                    ->scalarNode('tab_title')->isRequired()->end()
+                    ->integerNode('tab_order')->defaultValue(45)->end()
+                    ->scalarNode('path')->defaultNull()->end()
+                    ->booleanNode('secured')->defaultTrue()->end()
+                    ->booleanNode('title_visible')->defaultTrue()->end()
                 ->end()
             ->end();
 
