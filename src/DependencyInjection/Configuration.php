@@ -66,10 +66,13 @@ class Configuration implements ConfigurationInterface
     }
 
     /**
-     * Additional form tabs shown on a snippet-type's edit view. Each entry renders a
-     * FormView with the given form key and, when "secured" is true (default), registers
-     * an EDIT security context ("snippet_manager.<type>_<key>") so the tab can be
-     * enabled per role in the permission management.
+     * Additional tabs shown on a snippet-type's edit view. When "secured" is true
+     * (default), each tab registers an EDIT security context
+     * ("snippet_manager.<type>_<key>") so it can be enabled per role in the permission
+     * management. Two types are supported:
+     *  - "form" (default): renders a FormView for the given "form_key".
+     *  - "automation": renders the sulu/automation-bundle task list (requires that
+     *    bundle to be installed); "form_key" is not used and "tab_title" is optional.
      */
     private function addTabsNode(): ArrayNodeDefinition
     {
@@ -79,12 +82,19 @@ class Configuration implements ConfigurationInterface
             ->useAttributeAsKey('name')
             ->arrayPrototype()
                 ->children()
-                    ->scalarNode('form_key')->isRequired()->end()
-                    ->scalarNode('tab_title')->isRequired()->end()
+                    ->enumNode('type')->values(['form', 'automation'])->defaultValue('form')->end()
+                    ->scalarNode('form_key')->defaultNull()->end()
+                    ->scalarNode('tab_title')->defaultNull()->end()
                     ->integerNode('tab_order')->defaultValue(45)->end()
                     ->scalarNode('path')->defaultNull()->end()
                     ->booleanNode('secured')->defaultTrue()->end()
                     ->booleanNode('title_visible')->defaultTrue()->end()
+                ->end()
+                ->validate()
+                    ->ifTrue(static function (array $tab): bool {
+                        return 'form' === $tab['type'] && (null === $tab['form_key'] || null === $tab['tab_title']);
+                    })
+                    ->thenInvalid('The "form_key" and "tab_title" options are required for tabs of type "form".')
                 ->end()
             ->end();
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PERSPEQTIVE\SuluSnippetManagerBundle\Tests\Unit\Admin;
 
+use LogicException;
 use PERSPEQTIVE\SuluSnippetManagerBundle\Admin\ConfiguredSnippetAdmin;
 use PERSPEQTIVE\SuluSnippetManagerBundle\Security\PermissionTypes;
 use PERSPEQTIVE\SuluSnippetManagerBundle\Tests\Assert\AssertView;
@@ -17,11 +18,14 @@ use Sulu\Bundle\AdminBundle\Admin\Navigation\NavigationItem;
 use Sulu\Bundle\AdminBundle\Admin\Navigation\NavigationItemCollection;
 use Sulu\Bundle\AdminBundle\Admin\View\ViewBuilderFactory;
 use Sulu\Bundle\AdminBundle\Admin\View\ViewCollection;
+use Sulu\Bundle\AutomationBundle\Admin\View\AutomationViewBuilderFactory;
+use Sulu\Bundle\AutomationBundle\Admin\View\AutomationViewBuilderFactoryInterface;
 use Sulu\Bundle\ReferenceBundle\Infrastructure\Sulu\Admin\View\ReferenceViewBuilderFactory;
 use Sulu\Content\Domain\Model\AuditableInterface;
 use Sulu\Content\Domain\Model\ExcerptInterface;
 use Sulu\Content\Domain\Model\ShadowInterface;
 use Sulu\Content\Domain\Model\TaxonomyInterface;
+use Sulu\Snippet\Domain\Model\SnippetInterface;
 
 class ConfiguredSnippetAdminTest extends TestCase
 {
@@ -391,6 +395,60 @@ class ConfiguredSnippetAdminTest extends TestCase
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit.public', $views);
     }
 
+    public function testConfigureViewCollectionWithAutomationTab(): void
+    {
+        $admin = $this->buildAdmin('testsnippet', 'My Title', 20, 'su-snippet', 'parentNavigation', 'snippets', [
+            'automation' => [
+                'type' => 'automation',
+            ],
+        ], new AutomationViewBuilderFactory($this->viewBuilderFactory));
+        $viewCollection = new ViewCollection();
+        $admin->configureViews($viewCollection);
+
+        $views = $viewCollection->all();
+
+        self::assertCount(11, $views);
+        self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit.automation', $views);
+
+        $view = $views['sulu_snippet_manager_testsnippet.edit.automation']->getView();
+        self::assertSame('/automation', $view->getPath());
+        self::assertSame('sulu_snippet_manager_testsnippet.edit', $view->getParent());
+        self::assertSame(45, $view->getOption('tabOrder'));
+        self::assertSame('sulu_automation.automation', $view->getOption('tabTitle'));
+        self::assertSame(SnippetInterface::class, $view->getOption('requestParameters')['entityClass']);
+    }
+
+    public function testConfigureViewCollectionAutomationTabCustomTitleAndOrder(): void
+    {
+        $admin = $this->buildAdmin('testsnippet', 'My Title', 20, 'su-snippet', 'parentNavigation', 'snippets', [
+            'automation' => [
+                'type' => 'automation',
+                'tab_title' => 'app.custom_automation',
+                'tab_order' => 99,
+                'path' => '/tasks',
+            ],
+        ], new AutomationViewBuilderFactory($this->viewBuilderFactory));
+        $viewCollection = new ViewCollection();
+        $admin->configureViews($viewCollection);
+
+        $view = $viewCollection->all()['sulu_snippet_manager_testsnippet.edit.automation']->getView();
+        self::assertSame('/tasks', $view->getPath());
+        self::assertSame(99, $view->getOption('tabOrder'));
+        self::assertSame('app.custom_automation', $view->getOption('tabTitle'));
+    }
+
+    public function testConfigureViewCollectionAutomationTabWithoutBundleThrows(): void
+    {
+        $admin = $this->buildAdmin('testsnippet', 'My Title', 20, 'su-snippet', 'parentNavigation', 'snippets', [
+            'automation' => [
+                'type' => 'automation',
+            ],
+        ]);
+
+        $this->expectException(LogicException::class);
+        $admin->configureViews(new ViewCollection());
+    }
+
     public function testGetSecurityContextWithSecuredTabs(): void
     {
         $admin = $this->buildAdmin('testsnippet', 'My Title', 20, 'su-snippet', 'parentNavigation', 'snippets', [
@@ -458,6 +516,7 @@ class ConfiguredSnippetAdminTest extends TestCase
         ?string $parentNavigation = null,
         string $listViewKey = 'snippets',
         array $tabs = [],
+        ?AutomationViewBuilderFactoryInterface $automationViewBuilderFactory = null,
     ): ConfiguredSnippetAdmin {
         return new ConfiguredSnippetAdmin(
             $this->viewBuilderFactory,
@@ -482,6 +541,7 @@ class ConfiguredSnippetAdminTest extends TestCase
             $icon,
             $parentNavigation,
             $tabs,
+            $automationViewBuilderFactory,
         );
     }
 }

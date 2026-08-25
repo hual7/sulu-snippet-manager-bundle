@@ -99,19 +99,26 @@ tabs:
         path: "/additional"                      # optional, default "/<key>"
         secured: true                            # optional, default true — registers an own permission
         title_visible: true                      # optional, default true
+    tasks:
+        type: automation                         # sulu/automation-bundle task list on the snippet
 ```
 
 | tab item      | required | description                                                                                                             |
 |:--------------|:--------:|:------------------------------------------------------------------------------------------------------------------------|
-| form_key      |   yes    | Form key of the tab's form (must be provided by some bundle; this bundle only wires the view and permission)             |
-| tab_title     |   yes    | Translation key of the tab label                                                                                        |
+| type          |    no    | `form` (default) or `automation`                                                                                        |
+| form_key      | for `form` | Form key of the tab's form (must be provided by some bundle; this bundle only wires the view and permission)           |
+| tab_title     | for `form` | Translation key of the tab label (optional for `automation`, defaults to `sulu_automation.automation`)                 |
 | tab_order     |    no    | Sort order of the tab (default `45`)                                                                                    |
 | path          |    no    | Route path segment of the tab (default `/<key>`)                                                                        |
 | secured       |    no    | When `true` (default), registers an EDIT security context `snippet_manager.<type>_<key>` gating the tab per role         |
-| title_visible |    no    | Whether the form title is shown (default `true`)                                                                       |
+| title_visible |    no    | Whether the form title is shown (default `true`, `form` only)                                                          |
 
-> ℹ️ Only generic form tabs (a single `form_key`) are supported. Specialized views (e.g. an
-> automation task list) are not covered by this schema.
+#### Automation tabs
+`type: automation` renders the [sulu/automation-bundle](https://github.com/sulu/SuluAutomationBundle)
+task list for the snippet (scheduled publish/unpublish, etc.). It requires that bundle to be
+installed; otherwise a configured automation tab throws a `LogicException` at admin build time.
+The underlying task operations are additionally governed by the automation bundle's own
+`sulu_automation.automation.tasks` permission.
 
 ### Permissions
 Each snippet automatically receives its own permission key. These permissions are independent from the global snippet permissions in Sulu.

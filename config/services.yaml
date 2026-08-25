@@ -28,6 +28,9 @@ services:
             $referenceViewBuilderFactory: '@sulu_reference.reference_list_view_builder_factory'
             $excerptForms: '%sulu_content.content_excerpt_forms%'
             $settingsForms: '%sulu_content.content_settings_forms%'
+            # Optional — only available when sulu/automation-bundle is installed;
+            # required for tabs configured with "type: automation".
+            $automationViewBuilderFactory: '@?sulu_automation.automation_view_builder_factory'
         tags:
             - { name: sulu.context, context: admin }
 

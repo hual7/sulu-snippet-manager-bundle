@@ -17,7 +17,7 @@ class ConfiguredSnippetAdminBuilder
      *      order: int,
      *      icon: string,
      *      list_view_key: string,
-     *      tabs?: array<string, array{form_key: string, tab_title: string, tab_order?: int, path?: string|null, secured?: bool, title_visible?: bool}>,
+     *      tabs?: array<string, array{type?: string, form_key?: string|null, tab_title?: string|null, tab_order?: int, path?: string|null, secured?: bool, title_visible?: bool}>,
      * } $managerConfig
      */
     public function build(array $managerConfig, ContainerBuilder $container, ?string $parentNavigation): Definition

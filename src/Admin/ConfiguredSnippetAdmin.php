@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PERSPEQTIVE\SuluSnippetManagerBundle\Admin;
 
+use LogicException;
 use PERSPEQTIVE\SuluSnippetManagerBundle\Security\PermissionTypes;
 use PERSPEQTIVE\SuluSnippetManagerBundle\View\ViewTypes;
 use Sulu\Bundle\ActivityBundle\Infrastructure\Sulu\Admin\View\ActivityViewBuilderFactoryInterface;
@@ -11,16 +12,20 @@ use Sulu\Bundle\AdminBundle\Admin\Admin;
 use Sulu\Bundle\AdminBundle\Admin\Navigation\NavigationItem;
 use Sulu\Bundle\AdminBundle\Admin\Navigation\NavigationItemCollection;
 use Sulu\Bundle\AdminBundle\Admin\View\ViewBuilderFactoryInterface;
+use Sulu\Bundle\AdminBundle\Admin\View\ViewBuilderInterface;
 use Sulu\Bundle\AdminBundle\Admin\View\ViewCollection;
+use Sulu\Bundle\AutomationBundle\Admin\View\AutomationViewBuilderFactoryInterface;
 use Sulu\Bundle\ReferenceBundle\Infrastructure\Sulu\Admin\View\ReferenceViewBuilderFactoryInterface;
 use Sulu\Component\Localization\Provider\LocalizationProviderInterface;
 use Sulu\Component\Security\Authorization\SecurityCheckerInterface;
 use Sulu\Snippet\Domain\Model\Snippet;
 use Sulu\Snippet\Domain\Model\SnippetDimensionContent;
+use Sulu\Snippet\Domain\Model\SnippetInterface;
 
 use function explode;
 use function implode;
 use function is_subclass_of;
+use function sprintf;
 use function ucwords;
 
 class ConfiguredSnippetAdmin extends Admin
@@ -28,7 +33,7 @@ class ConfiguredSnippetAdmin extends Admin
     /**
      * @param array<string, array{instanceOf: class-string}> $settingsForms
      * @param array<string, array{instanceOf: class-string}> $excerptForms
-     * @param array<string, array{form_key: string, tab_title: string, tab_order?: int, path?: string|null, secured?: bool, title_visible?: bool}> $tabs
+     * @param array<string, array{type?: string, form_key?: string|null, tab_title?: string|null, tab_order?: int, path?: string|null, secured?: bool, title_visible?: bool}> $tabs
      */
     public function __construct(
         private readonly ViewBuilderFactoryInterface $viewBuilderFactory,
@@ -47,6 +52,7 @@ class ConfiguredSnippetAdmin extends Admin
         private readonly string $icon = 'su-snippet',
         private readonly ?string $parentNavigation = null,
         private readonly array $tabs = [],
+        private readonly ?AutomationViewBuilderFactoryInterface $automationViewBuilderFactory = null,
     ) {
     }
 
@@ -263,25 +269,64 @@ class ConfiguredSnippetAdmin extends Admin
             }
 
             $viewCollection->add(
-                $this->viewBuilderFactory
-                    ->createFormViewBuilder(
-                        $this->buildViewName(ViewTypes::EDIT) . '.' . $key,
-                        $tab['path'] ?? ('/' . $key),
-                    )
-                    ->setResourceKey(Snippet::RESOURCE_KEY)
-                    ->setFormKey($tab['form_key'])
-                    ->setTabTitle($tab['tab_title'])
-                    ->setTitleVisible($tab['title_visible'] ?? true)
-                    ->setTabOrder($tab['tab_order'] ?? 45)
-                    ->addToolbarActions(
-                        $this->formToolbarBuilder->build(
-                            $this->buildSecurityContext(),
-                            $this->buildViewName(ViewTypes::EDIT),
-                        ),
-                    )
-                    ->setParent($this->buildViewName(ViewTypes::EDIT)),
+                ($tab['type'] ?? 'form') === 'automation'
+                    ? $this->buildAutomationTabView($key, $tab)
+                    : $this->buildFormTabView($key, $tab),
             );
         }
+    }
+
+    /**
+     * @param array{form_key?: string|null, tab_title?: string|null, tab_order?: int, path?: string|null, title_visible?: bool} $tab
+     */
+    private function buildFormTabView(string $key, array $tab): ViewBuilderInterface
+    {
+        return $this->viewBuilderFactory
+            ->createFormViewBuilder(
+                $this->buildViewName(ViewTypes::EDIT) . '.' . $key,
+                $tab['path'] ?? ('/' . $key),
+            )
+            ->setResourceKey(Snippet::RESOURCE_KEY)
+            ->setFormKey((string) ($tab['form_key'] ?? ''))
+            ->setTabTitle((string) ($tab['tab_title'] ?? ''))
+            ->setTitleVisible($tab['title_visible'] ?? true)
+            ->setTabOrder($tab['tab_order'] ?? 45)
+            ->addToolbarActions(
+                $this->formToolbarBuilder->build(
+                    $this->buildSecurityContext(),
+                    $this->buildViewName(ViewTypes::EDIT),
+                ),
+            )
+            ->setParent($this->buildViewName(ViewTypes::EDIT));
+    }
+
+    /**
+     * @param array{tab_title?: string|null, tab_order?: int, path?: string|null} $tab
+     */
+    private function buildAutomationTabView(string $key, array $tab): ViewBuilderInterface
+    {
+        if ($this->automationViewBuilderFactory === null) {
+            throw new LogicException(sprintf(
+                'The snippet manager tab "%s" of type "automation" requires the "sulu/automation-bundle" to be installed.',
+                $key,
+            ));
+        }
+
+        $viewBuilder = $this->automationViewBuilderFactory->createTaskListViewBuilder(
+            $this->buildViewName(ViewTypes::EDIT) . '.' . $key,
+            $tab['path'] ?? ('/' . $key),
+            SnippetInterface::class,
+        );
+
+        $tabTitle = $tab['tab_title'] ?? null;
+        if ($tabTitle !== null) {
+            $viewBuilder->setTabTitle($tabTitle);
+        }
+
+        $viewBuilder->setTabOrder($tab['tab_order'] ?? 45);
+        $viewBuilder->setParent($this->buildViewName(ViewTypes::EDIT));
+
+        return $viewBuilder;
     }
 
     private function buildInsightsView(ViewCollection $viewCollection): void

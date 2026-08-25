@@ -32,7 +32,11 @@
     "phpstan/phpstan-phpunit": "^2.0",
     "phpstan/phpstan-symfony": "^2.0",
     "symfony/dotenv": "^6.0 || ^7.0",
-    "handcraftedinthealps/zendsearch": "^2.0"
+    "handcraftedinthealps/zendsearch": "^2.0",
+    "sulu/automation-bundle": "^3.0"
+  },
+  "suggest": {
+    "sulu/automation-bundle": "To use snippet manager tabs of type \"automation\""
   },
   "autoload": {
     "psr-4": {
