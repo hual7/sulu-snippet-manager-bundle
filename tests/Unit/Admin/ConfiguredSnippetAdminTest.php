@@ -112,7 +112,7 @@ class ConfiguredSnippetAdminTest extends TestCase
 
         $views = $viewCollection->all();
 
-        self::assertCount(10, $views);
+        self::assertCount(11, $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit.details', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.add', $views);
@@ -120,6 +120,7 @@ class ConfiguredSnippetAdminTest extends TestCase
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.list', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.excerpt', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.settings', $views);
+        self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights.versions', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights.activity', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights.reference', $views);
 
@@ -227,7 +228,7 @@ class ConfiguredSnippetAdminTest extends TestCase
 
         $views = $viewCollection->all();
 
-        self::assertCount(9, $views);
+        self::assertCount(10, $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit.details', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.add', $views);
@@ -235,6 +236,7 @@ class ConfiguredSnippetAdminTest extends TestCase
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.list', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.excerpt', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights', $views);
+        self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights.versions', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights.activity', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights.reference', $views);
     }
@@ -259,7 +261,7 @@ class ConfiguredSnippetAdminTest extends TestCase
 
         $views = $viewCollection->all();
 
-        self::assertCount(9, $views);
+        self::assertCount(10, $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit.details', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.add', $views);
@@ -267,6 +269,7 @@ class ConfiguredSnippetAdminTest extends TestCase
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.list', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.settings', $views);
+        self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights.versions', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights.activity', $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.insights.reference', $views);
     }
@@ -301,7 +304,7 @@ class ConfiguredSnippetAdminTest extends TestCase
 
         $views = $viewCollection->all();
 
-        self::assertCount(11, $views);
+        self::assertCount(12, $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit.additional', $views);
 
         $tabView = $views['sulu_snippet_manager_testsnippet.edit.additional']->getView();
@@ -361,7 +364,7 @@ class ConfiguredSnippetAdminTest extends TestCase
 
         $views = $viewCollection->all();
 
-        self::assertCount(10, $views);
+        self::assertCount(11, $views);
         self::assertArrayNotHasKey('sulu_snippet_manager_testsnippet.edit.additional', $views);
     }
 
@@ -391,7 +394,7 @@ class ConfiguredSnippetAdminTest extends TestCase
 
         $views = $viewCollection->all();
 
-        self::assertCount(11, $views);
+        self::assertCount(12, $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit.public', $views);
     }
 
@@ -407,7 +410,7 @@ class ConfiguredSnippetAdminTest extends TestCase
 
         $views = $viewCollection->all();
 
-        self::assertCount(11, $views);
+        self::assertCount(12, $views);
         self::assertArrayHasKey('sulu_snippet_manager_testsnippet.edit.automation', $views);
 
         $view = $views['sulu_snippet_manager_testsnippet.edit.automation']->getView();

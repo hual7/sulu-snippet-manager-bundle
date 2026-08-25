@@ -11,6 +11,7 @@ use Sulu\Bundle\ActivityBundle\Infrastructure\Sulu\Admin\View\ActivityViewBuilde
 use Sulu\Bundle\AdminBundle\Admin\Admin;
 use Sulu\Bundle\AdminBundle\Admin\Navigation\NavigationItem;
 use Sulu\Bundle\AdminBundle\Admin\Navigation\NavigationItemCollection;
+use Sulu\Bundle\AdminBundle\Admin\View\ListItemAction;
 use Sulu\Bundle\AdminBundle\Admin\View\ViewBuilderFactoryInterface;
 use Sulu\Bundle\AdminBundle\Admin\View\ViewBuilderInterface;
 use Sulu\Bundle\AdminBundle\Admin\View\ViewCollection;
@@ -347,6 +348,30 @@ class ConfiguredSnippetAdmin extends Admin
                 ->setTabTitle('sulu_admin.insights')
                 ->setTitleProperty('')
                 ->setParent($this->buildViewName(ViewTypes::EDIT)),
+        );
+
+        $viewCollection->add(
+            $this->viewBuilderFactory
+                ->createListViewBuilder($this->buildViewName(ViewTypes::INSIGHTS) . '.versions', '/versions')
+                ->setResourceKey(Snippet::RESOURCE_KEY . '_versions')
+                ->setListKey(Snippet::RESOURCE_KEY . '_versions')
+                ->setTabTitle('sulu_admin.versions')
+                ->addListAdapters(['table'])
+                ->addAdapterOptions([
+                    'table' => [
+                        'skin' => 'flat',
+                    ],
+                ])
+                ->disableTabGap()
+                ->disableSearching()
+                ->disableSelection()
+                ->disableColumnOptions()
+                ->disableFiltering()
+                ->addRouterAttributesToListRequest(['id'])
+                ->addItemActions([
+                    new ListItemAction('restore_version', ['success_view' => $this->buildViewName(ViewTypes::EDIT)]),
+                ])
+                ->setParent($this->buildViewName(ViewTypes::INSIGHTS)),
         );
 
         if ($this->activityViewBuilderFactory->hasActivityListPermission()) {
