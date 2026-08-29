@@ -131,6 +131,44 @@ class SnippetAreaNormalizerTest extends TestCase
         self::assertSame(['normalized-data'], $result);
     }
 
+    public function testNormalizeKeepsAreasWithoutTemplateKey(): void
+    {
+        $data = [
+            '_embedded' => [
+                'snippet_areas' => [
+                    ['templateKey' => null],
+                    ['key' => 'without_template_key'],
+                    ['templateKey' => 'area1'],
+                ],
+            ],
+        ];
+
+        $context = ['sulu_admin_snippet_list' => true];
+
+        $this->securityChecker->hasPermission = [
+            'snippet_manager.area1_default_snippets' => [PermissionTypes::EDIT => true],
+        ];
+
+        // Unassigned areas (null / missing templateKey) are not managed by the bundle
+        // and must be kept untouched instead of triggering a TypeError.
+        $expectedModifiedData = [
+            '_embedded' => [
+                'snippet_areas' => [
+                    ['templateKey' => null],
+                    ['key' => 'without_template_key'],
+                    ['templateKey' => 'area1'],
+                ],
+            ],
+        ];
+
+        $this->normalizer->result = ['normalized-data'];
+
+        $result = $this->snippetAreaNormalizer->normalize($data, null, $context);
+
+        self::assertSame($expectedModifiedData, $this->normalizer->dataToNormalize);
+        self::assertSame(['normalized-data'], $result);
+    }
+
     public function testNormalizeWithoutCorrectContext(): void
     {
         $data = ['some' => 'data'];

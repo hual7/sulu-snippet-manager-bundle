@@ -78,11 +78,11 @@ class SnippetAreaNormalizer implements NormalizerInterface, NormalizerAwareInter
 
         $configuredTypes = $this->configuredSnippetTypesProvider->getConfiguredSnippetTypes();
 
-        /** @var array{_embedded: array{snippet_areas: array<int, array{templateKey: string}>}} $object */
+        /** @var array{_embedded: array{snippet_areas: array<int, array{templateKey?: string|null}>}} $object */
         $newAreas = [];
-        /** @var array<string, string> $area */
+        /** @var array<string, string|null> $area */
         foreach ($object['_embedded']['snippet_areas'] as $area) {
-            $templateKey = $area['templateKey'];
+            $templateKey = $area['templateKey'] ?? null;
 
             if ($this->isManaged($templateKey, $configuredTypes) === false) {
                 $newAreas[] = $area;
@@ -103,12 +103,13 @@ class SnippetAreaNormalizer implements NormalizerInterface, NormalizerAwareInter
 
     /**
      * Only areas managed by this bundle have a snippet_manager permission context
-     * and may be filtered by the permission check.
+     * and may be filtered by the permission check. Areas without an assigned
+     * default snippet have a null templateKey and are therefore never managed.
      *
      * @param string[] $configuredTypes
      */
-    private function isManaged(string $templateKey, array $configuredTypes): bool
+    private function isManaged(?string $templateKey, array $configuredTypes): bool
     {
-        return in_array($templateKey, $configuredTypes, true);
+        return $templateKey !== null && in_array($templateKey, $configuredTypes, true);
     }
 }
